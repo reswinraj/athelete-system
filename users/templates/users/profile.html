@@ -56,6 +56,11 @@
                     </div>
 
                     <div class="detail-item">
+                        <span class="detail-label">Age</span>
+                        <span class="detail-value">{{ profile.age|default:"Age unavailable" }}</span>
+                    </div>
+
+                    <div class="detail-item">
                         <span class="detail-label">Date of Birth</span>
                         <span class="detail-value">{{ profile.date_of_birth|default:"-" }}</span>
                     </div>

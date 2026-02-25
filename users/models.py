@@ -63,6 +63,14 @@ class UserProfile(models.Model):
         help_text="The coach assigned to this athlete"
     )
     
+    @property
+    def age(self):
+        if self.date_of_birth:
+            import datetime
+            today = datetime.date.today()
+            return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
+        return None
+
     def bmi(self):
         if self.height_cm and self.weight_kg:
             h = self.height_cm / 100

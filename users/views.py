@@ -206,7 +206,7 @@ def edit_profile(request):
     profile, created = UserProfile.objects.get_or_create(user=request.user)
     if request.method == 'POST':
         try:
-            profile.age = request.POST.get('age') or None
+            profile.date_of_birth = request.POST.get('date_of_birth') or None
             profile.gender = request.POST.get('gender')
             profile.sport = request.POST.get('sport')
             profile.height_cm = request.POST.get('height_cm') or None
