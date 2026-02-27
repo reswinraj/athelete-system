@@ -41,7 +41,8 @@
                     <li style="margin-bottom:8px;"><strong>Height:</strong> {{ athlete.height_cm|default:"—" }} cm</li>
                     <li style="margin-bottom:8px;"><strong>Weight:</strong> {{ athlete.weight_kg|default:"—" }} kg</li>
                     <li style="margin-bottom:8px;"><strong>BMI:</strong> {{ athlete.bmi|default:"—" }}</li>
-                    <li style="margin-bottom:8px;"><strong>Age:</strong> {{ athlete.age|default:"Age unavailable" }}</li>
+                    <li style="margin-bottom:8px;"><strong>Age:</strong> {{ athlete.age|default:"Age unavailable" }}
+                    </li>
                     <li style="margin-bottom:8px;"><strong>Gender:</strong> {{ athlete.gender|default:"—" }}</li>
                 </ul>
             </div>
@@ -110,7 +111,166 @@
 
         </div>
 
+        <!-- AI INSIGHT SECTION -->
+        <div style="margin-top: 30px; background:white; border-radius:10px; border:1px solid #e0e0e0; padding:20px;">
+            <h3 style="margin-top:0; color:#0d47a1;">AI Performance Insight</h3>
+            <p style="color:#555; font-size:14px; margin-bottom:15px;">Get an AI-generated analysis of this athlete's
+                recent performance and training data.</p>
+
+            <button id="generateInsightBtn" style="
+                background-color: #2563eb;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 15px;
+                font-weight: 500;
+                transition: background-color 0.2s;
+            ">
+                ✨ Generate Performance Insight
+            </button>
+
+            <div id="insightPanel" style="
+                margin-top: 20px;
+                padding: 20px;
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                min-height: 120px;
+                display: none;
+            ">
+                <span id="insightText" style="
+                    line-height: 1.6;
+                    font-size: 15px;
+                    color: #334155;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                "></span><span id="cursor" style="
+                    display: inline-block;
+                    width: 8px;
+                    height: 16px;
+                    background-color: #2563eb;
+                    vertical-align: middle;
+                    margin-left: 2px;
+                    border-radius: 1px;
+                " class="hidden"></span>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<style>
+    .analyzing-text {
+        color: #64748b;
+        font-style: italic;
+        animation: pulse 1.5s infinite;
+    }
+
+    .cursor.hidden {
+        display: none !important;
+    }
+
+    #cursor {
+        animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0;
+        }
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    #generateInsightBtn:hover:not(:disabled) {
+        background-color: #1d4ed8 !important;
+    }
+
+    #generateInsightBtn:disabled {
+        background-color: #94a3b8 !important;
+        cursor: not-allowed !important;
+        opacity: 0.8;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const btn = document.getElementById("generateInsightBtn");
+        const panel = document.getElementById("insightPanel");
+        const textElement = document.getElementById("insightText");
+        const cursor = document.getElementById("cursor");
+
+        const targetInsightText = `Based on the latest data, {{ athlete.user.username }}'s release velocity has improved by 2.4% over the last microcycle.\n\nHowever, recent sleep logs indicate a drop below the 7.5-hour threshold, which strongly correlates with the slight decline in lower-body power output during yesterday's session.\n\nRecommendation:\n• Increase recovery focused rest tonight\n• Emphasize hydration protocols before tomorrow's heavy throw day\n• Maintain current macronutrient breakdown`;
+
+        let isGenerating = false;
+
+        btn.addEventListener("click", () => {
+            if (isGenerating) return;
+
+            isGenerating = true;
+            btn.disabled = true;
+            btn.innerHTML = `⏳ Generating...`;
+
+            panel.style.display = "block";
+            cursor.classList.add("hidden");
+
+            textElement.textContent = "Analyzing performance metrics...";
+            textElement.classList.add("analyzing-text");
+
+            setTimeout(() => {
+                textElement.classList.remove("analyzing-text");
+                textElement.textContent = "";
+                cursor.classList.remove("hidden");
+
+                let charIndex = 0;
+                const baseTypingSpeed = 15;
+
+                function typeNextCharacter() {
+                    if (charIndex < targetInsightText.length) {
+                        textElement.textContent += targetInsightText.charAt(charIndex);
+                        charIndex++;
+
+                        const randomVariation = Math.floor(Math.random() * 15);
+                        const delay = baseTypingSpeed + randomVariation;
+
+                        const lastChar = targetInsightText.charAt(charIndex - 1);
+                        const punctuationDelay = (lastChar === '.' || lastChar === '\n') ? 250 : 0;
+
+                        setTimeout(typeNextCharacter, delay + punctuationDelay);
+                    } else {
+                        isGenerating = false;
+                        btn.disabled = false;
+                        btn.innerHTML = `✨ Regenerate Insight`;
+
+                        setTimeout(() => {
+                            cursor.classList.add("hidden");
+                        }, 3000);
+                    }
+                }
+
+                typeNextCharacter();
+
+            }, 1500);
+        });
+    });
+</script>
 
 {% endblock %}

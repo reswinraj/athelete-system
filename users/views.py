@@ -127,7 +127,13 @@ def insights_view(request):
         insights.append(f"Error generating plans: {e}")
     if not insights:
         insights.append("Log at least 2 sessions and 2 meals to see performance insights.")
-    return render(request, "users/insights.html", {'insights': insights})
+        
+    try:
+        profile = request.user.userprofile
+    except Exception:
+        profile = None
+        
+    return render(request, "users/insights.html", {'insights': insights, 'profile': profile})
 def login_page(request):
     if request.user.is_authenticated:
         return redirect(get_role_redirect(request.user)) # Redirect based on role
