@@ -653,146 +653,7 @@
             let typeWriterTimeout;
             let isGenerating = false;
 
-            // Generators
-            function generatePerformanceInsight() {
-                const sportFormatted = sport.charAt(0).toUpperCase() + sport.slice(1);
-                return `PERFORMANCE INSIGHT
-
-ATHLETE SNAPSHOT
-• ${athleteName} | ${sportFormatted}
-• ${weight}kg | ${height}cm | BMI: ${bmi.toFixed(1)}
-• Training Load: 88% Intensity Average
-
-TREND ANALYSIS
-• Power Output: Trending +2.4% this mesocycle.
-• CNS Readiness: Marginal. Fatigue accumulating.
-• Sleep Impact: 7.5h average = Suboptimal recovery.
-• Workload: High threshold. Borderline overtraining.
-
-PERFORMANCE RISKS
-• Hydration deficit driving premature fatigue.
-• Lack of morning fuel stalling early output.
-• Joint stress increasing under 85%+ 1RM loads.
-
-OPTIMIZATION DIRECTIVES
-1. Increase sleep window to mandatory 8.5 hours.
-2. Front-load daily calories before 14:00.
-3. Drop accessory volume by 20% this week.
-4. Introduce 15min active mobility post-session.`;
-            }
-
-            function generateTrainingPlan() {
-                return `STRENGTH & CONDITIONING PLAN
-
-MESOCYCLE FOCUS
-• Absolute force production and rate of force development (RFD).
-• Technical refinement under heavy central fatigue.
-
-PRIMARY LIFTS
-• Back Squat | 5 x 3 | 85-90% 1RM
-• Push Press | 6 x 2 | 80% 1RM
-• Olympic Pulls | 4 x 3 | 90% 1RM
-
-SECONDARY WORK
-• Bulgarian Split Squats (Heavy)
-• Weighted Pull-ups
-• Posterior Chain Isoholds
-
-POWER DEVELOPMENT
-• Medicine Ball Throws (Max Intent)
-• Broad Jumps (Reset each rep)
-• Band-resisted Sprints (10m)
-
-RECOVERY PROTOCOL
-• 10min assault bike (Zone 1) post-lift.
-• Contrast showers (3min hot / 1min cold).
-• 400mg Magnesium pre-sleep.
-
-WEEK STRUCTURE
-• Day 1: Max Effort Lower + Jumps
-• Day 2: Dynamic Effort Upper + Throws
-• Day 3: Active Recovery & Mobility
-• Day 4: Max Effort Upper + Pulls
-• Day 5: Dynamic Effort Lower
-• Day 6: Technical Throws Practice
-• Day 7: Complete Rest
-
-TACTICAL EXECUTION RULES
-1. Never compromise bar speed for weight.
-2. Rest exactly 180s between primary lift working sets.
-3. Record all velocities. Missed metrics equal wasted reps.`;
-            }
-
-            function generateNutritionPlan() {
-                const proteinTargetMin = Math.round(weight * 2.0);
-                const currentProtein = 150;
-                const proteinDeficit = proteinTargetMin - currentProtein;
-                const sportFormatted = sport.charAt(0).toUpperCase() + sport.slice(1);
-
-                return `NUTRITION & RECOVERY PROTOCOL
-
-ATHLETE SNAPSHOT
-• Name: ${athleteName}
-• Body Mass: ${weight}kg | Height: ${height}cm
-• Role: ${sportFormatted}
-
-MACRO GAP ANALYSIS
-• Protein deficit detected: -${proteinDeficit}g/day.
-• Hydration critical: Running at 2.5L. Target 5.0L.
-• Fasted training stalling maximum output.
-• Caloric surplus required for ${sportFormatted} mass.
-
-CRITICAL FIXES
-• Double chicken portions from 150g to 250g.
-• Cease morning fasts. Introduce liquid calories.
-• Shift total white rice load to training windows.
-
-STRUCTURED DAILY PLAN
-
-Breakfast:
-• 100g Oats, 500ml Whole Milk, 1 Scoop Whey.
-• 3 Whole Eggs (scrambled).
-• Why: CNS primer. Bypasses appetite suppression.
-
-Pre-Workout:
-• 250g Chicken Breast (logged food).
-• 300g White Rice (logged food).
-• Why: Spike insulin. Drive force production.
-
-Post-Workout:
-• 2 Scoops Whey Protein.
-• 50g Dextrose or 1 Banana.
-• Why: Halt catabolism. Synthesize damaged tissue.
-
-Dinner:
-• 250g Lean Beef.
-• 200g Sweet Potato.
-• Why: Bioavailable iron for CNS recovery.
-
-Before Sleep:
-• 200g Greek Yogurt, 30g Almonds.
-• Why: Slow casein release prevents atrophy.
-
-HYDRATION PROTOCOL
-• Target: 5.0L/day minimum.
-• Pre-session: 1L Water + 1/2 tsp Sea Salt.
-• Why: Salt maximizes intracellular volumization.
-
-SUPPLEMENT STACK
-• Whey Isolate: 2 scoops post-training.
-• Creatine: 5g daily.
-• Magnesium: 400mg before sleep.
-
-GROCERY LIST
-• Meats: Chicken breast, Lean beef, Eggs
-• Carbs: White rice, Oats, Sweet potato
-• Dairy/Fat: Whole milk, Greek yogurt, Almonds
-
-TACTICAL DIRECTIVES
-1. Eliminate 80g daily protein deficit immediately.
-2. Carry 2L water jug. Clear it 2.5x daily.
-3. Batch cook 1.5kg chicken bi-weekly to kill friction.`;
-            }
+            // Generators have been replaced by backend AI endpoints
 
             function toggleButtons(state) {
                 aiBtns.forEach(btn => {
@@ -823,7 +684,22 @@ TACTICAL DIRECTIVES
                 }
             }
 
-            function triggerSimulation(titleText, generatorFunc) {
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function triggerSimulation(titleText, url, resultKey) {
                 if (isGenerating) return;
 
                 isGenerating = true;
@@ -846,20 +722,49 @@ TACTICAL DIRECTIVES
                     statusText.innerText = loadingMsgs[dotCount % loadingMsgs.length] + ".".repeat((dotCount % 3) + 1);
                 }, 500);
 
-                setTimeout(() => {
-                    clearInterval(analyzerInterval);
-                    statusText.style.display = "none";
-                    generatedCard.style.display = "block";
-                    title.innerText = titleText;
+                const csrftoken = getCookie('csrftoken');
 
-                    const fullText = generatorFunc();
-                    typeWriter(fullText, 0);
-                }, Math.random() * 1000 + 1500);
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: JSON.stringify({
+                        weight: weight,
+                        height: height,
+                        sport: sport,
+                        bmi: bmi
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        clearInterval(analyzerInterval);
+                        statusText.style.display = "none";
+                        generatedCard.style.display = "block";
+                        title.innerText = titleText;
+
+                        const fullText = data[resultKey] || "Error generating output from AI model.";
+                        typeWriter(fullText, 0);
+                    })
+                    .catch(error => {
+                        clearInterval(analyzerInterval);
+                        statusText.style.display = "none";
+                        generatedCard.style.display = "block";
+                        title.innerText = "Error";
+                        typeWriter("An error occurred during generation: " + error.message, 0);
+                        console.error('Error:', error);
+                    });
             }
 
-            if (btnP) btnP.addEventListener('click', () => triggerSimulation("Performance Insight", generatePerformanceInsight));
-            if (btnT) btnT.addEventListener('click', () => triggerSimulation("Training Plan", generateTrainingPlan));
-            if (btnN) btnN.addEventListener('click', () => triggerSimulation("Nutrition Plan", generateNutritionPlan));
+            if (btnP) btnP.addEventListener('click', () => triggerSimulation("Performance Insight", "{% url 'generate_performance_rf' %}", "insight"));
+            if (btnT) btnT.addEventListener('click', () => triggerSimulation("Training Plan", "{% url 'generate_training_rf' %}", "plan"));
+            if (btnN) btnN.addEventListener('click', () => triggerSimulation("Nutrition Plan", "{% url 'generate_nutrition_rf' %}", "nutrition"));
 
         });
     </script>

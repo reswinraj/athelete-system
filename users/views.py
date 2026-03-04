@@ -419,3 +419,144 @@ def athlete_suggestions_view(request):
     }
     return render(request, 'users/athlete_suggestions.html', context)
 
+import os
+import json
+import joblib
+from django.http import JsonResponse
+
+# Use relative path since manage.py is run from c:\project04
+def _load_rf_model_and_scaler():
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    model_path = os.path.join(base_dir, 'ml_models', 'rf_calorie_model.joblib')
+    scaler_path = os.path.join(base_dir, 'ml_models', 'feature_scaler.joblib')
+    model = joblib.load(model_path) if os.path.exists(model_path) else None
+    scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+    return model, scaler
+
+from .ml_utils import analyze_performance_trend
+from .plan_generator import generate_training_plan, generate_diet_plan
+from django.utils.html import strip_tags
+
+@login_required
+def generate_performance_rf_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            weight = float(data.get('weight', 80))
+            height = float(data.get('height', 180))
+            bmi = float(data.get('bmi', 24))
+            sport = data.get('sport', 'Athlete').title()
+            
+            model, scaler = _load_rf_model_and_scaler()
+            prediction_text = ""
+            if model and scaler:
+                # features: age, gender, height_cm, weight_kg, discipline, session_type, duration_mins, intensity, bmi
+                features = [[25, 1, height, weight, 1, 1, 60, 7, bmi]]
+                features_scaled = scaler.transform(features)
+                pred = model.predict(features_scaled)[0]
+                prediction_text = f"• Expected Base Caloric Burn: {int(pred)} kcal (Random Forest (RF) Model)"
+                
+            trend_html = analyze_performance_trend(request.user)
+            if trend_html:
+                # Clean up HTML to plain text formatting
+                trend_text = trend_html.replace('<b>', '').replace('</b>', '').replace('<strong>', '').replace('</strong>', '').replace('<br>', '\n').replace('<small>', '').replace('</small>', '')
+                trend_text = strip_tags(trend_text)
+            else:
+                trend_text = "Not enough data for trend analysis. Please log more sessions."
+
+            insight_text = f"""PERFORMANCE INSIGHT (AI GENERATED)
+
+ATHLETE SNAPSHOT
+• Sport: {sport}
+• {weight}kg | {height}cm | Body Mass Index (BMI): {bmi:.1f}
+{prediction_text}
+
+TREND ANALYSIS
+{trend_text}
+"""
+            return JsonResponse({"insight": insight_text})
+        except Exception as e:
+            return JsonResponse({"insight": f"Error generating insight: {str(e)}"}, status=400)
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+@login_required
+def generate_training_rf_view(request):
+    if request.method == "POST":
+        try:
+            from workouts.services.rule_engine import build_session
+            data = json.loads(request.body)
+            weight = float(data.get('weight', 80))
+            height = float(data.get('height', 180))
+            bmi = float(data.get('bmi', 24))
+            sport = data.get('sport', 'Athlete').title()
+            
+            model, scaler = _load_rf_model_and_scaler()
+            prediction_text = ""
+            target_load = 150 # Default fallback
+            if model and scaler:
+                # Predicting target calorie burn or load; we'll use a derived target load
+                features = [[25, 1, height, weight, 1, 1, 60, 7, bmi]]
+                features_scaled = scaler.transform(features)
+                pred = model.predict(features_scaled)[0]
+                prediction_text = f"\n[AI Machine Learning (ML) Caloric Target: {int(pred)} kcal/day]"
+                # Map target calories to a sensible target load size (100 - 300)
+                target_load = min(max(int(pred / 20), 50), 300)
+                
+            # Predict fatigue score dynamically via ML model
+            from workouts.services.readiness_engine import predict_readiness
+            fatigue_score = predict_readiness(request.user)
+
+            # Generate session
+            session_data = build_session(sport, fatigue_score, target_load)
+
+            structured_plan = f"STRENGTH & CONDITIONING PLAN (AI GENERATED)\n\n"
+            structured_plan += f"Day Type: {session_data['day_type']} (Total Normalized Estimated Load Units (nELU): {session_data['total_nelu']})\n\n"
+            for block in session_data['blocks']:
+                structured_plan += f"• {block['block']}:\n"
+                structured_plan += f"  - {block['exercise']}: {block['sets']}x{block['reps']} (Rest: {block['rest']}s)\n"
+
+            final_text = f"{structured_plan.strip()}\n{prediction_text}\n"
+            return JsonResponse({"plan": final_text})
+        except Exception as e:
+            return JsonResponse({"plan": f"Error: {e}"}, status=400)
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+@login_required
+def generate_nutrition_rf_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            weight = float(data.get('weight', 80))
+            height = float(data.get('height', 180))
+            bmi = float(data.get('bmi', 24))
+            sport = data.get('sport', 'Athlete').title()
+            
+            model, scaler = _load_rf_model_and_scaler()
+            target_calories = 3000
+            if model and scaler:
+                features = [[25, 1, height, weight, 1, 1, 60, 7, bmi]]
+                features_scaled = scaler.transform(features)
+                target_calories = int(model.predict(features_scaled)[0])
+                
+            diet_html = generate_diet_plan(request.user)
+            if diet_html.startswith("Not enough data"):
+                diet_text = diet_html
+            else:
+                diet_text = diet_html.replace('<li>', '\n• ').replace('</li>', '').replace('<b>', '').replace('</b>', '').replace('<ul>', '').replace("<ul style='text-align: left; margin-top: 10px;'>", '').replace('</ul>', '')
+                diet_text = strip_tags(diet_text)
+                
+            nutrition_text = f"""NUTRITION & RECOVERY PROTOCOL (AI GENERATED)
+
+ATHLETE SNAPSHOT
+• Body Mass: {weight}kg | Height: {height}cm 
+• Role: {sport}
+
+MACRO GAP ANALYSIS
+• Target Calories: {target_calories} kcal/day (Based on Random Forest (RF) Prediction)
+{diet_text.strip()}
+"""
+            return JsonResponse({"nutrition": nutrition_text})
+        except Exception as e:
+            return JsonResponse({"nutrition": f"Error: {e}"}, status=400)
+    return JsonResponse({"error": "Invalid method"}, status=405)
+

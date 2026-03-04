@@ -6,7 +6,8 @@ from .views import (
     coach_athlete_detail_view, coach_athlete_workouts_view, 
     coach_athlete_detail_view, coach_athlete_workouts_view, 
     coach_athlete_nutrition_view, coach_assign_athlete_view,
-    coach_give_suggestion_view, athlete_suggestions_view
+    coach_give_suggestion_view, athlete_suggestions_view,
+    generate_performance_rf_view, generate_training_rf_view, generate_nutrition_rf_view
 )
 
 urlpatterns = [
@@ -26,4 +27,9 @@ urlpatterns = [
     path("coach/athlete/<int:pk>/nutrition/", coach_athlete_nutrition_view, name="coach_athlete_nutrition"),
     path("coach/assign-athlete/", coach_assign_athlete_view, name="coach_assign_athlete"),
     path("coach/athlete/<int:athlete_id>/suggest/", coach_give_suggestion_view, name="coach_give_suggestion"),
+    
+    # AI RF Generator endpoints
+    path("generate-performance-rf/", generate_performance_rf_view, name="generate_performance_rf"),
+    path("generate-training-rf/", generate_training_rf_view, name="generate_training_rf"),
+    path("generate-nutrition-rf/", generate_nutrition_rf_view, name="generate_nutrition_rf"),
 ]

@@ -84,3 +84,107 @@ class ThrowerSession(models.Model):
 
     def __str__(self):
         return f"Throw: {self.best_throw_m}m ({self.implement_weight_kg}kg)"
+
+# --- Exercise Database Model ---
+
+class Exercise(models.Model):
+    DISCIPLINE_CHOICES = [
+        ('Runner', 'Runner'),
+        ('Jumper', 'Jumper'),
+        ('Thrower', 'Thrower'),
+        ('General', 'General'),
+    ]
+
+    MOVEMENT_PATTERN_CHOICES = [
+        ('Squat', 'Squat'),
+        ('Hinge', 'Hinge'),
+        ('Push', 'Push'),
+        ('Pull', 'Pull'),
+        ('Carry', 'Carry'),
+        ('Sprint', 'Sprint'),
+        ('Jump', 'Jump'),
+        ('Throw', 'Throw'),
+        ('Core', 'Core'),
+        ('Mobility', 'Mobility'),
+    ]
+
+    ENERGY_SYSTEM_CHOICES = [
+        ('ATP-PC', 'ATP-PC'),
+        ('Glycolytic', 'Glycolytic'),
+        ('Oxidative', 'Oxidative'),
+    ]
+
+    INTENSITY_CHOICES = [
+        ('Strength', 'Strength'),
+        ('Power', 'Power'),
+        ('Hypertrophy', 'Hypertrophy'),
+        ('Conditioning', 'Conditioning'),
+        ('Recovery', 'Recovery'),
+    ]
+
+    EQUIPMENT_CHOICES = [
+        ('None', 'None'),
+        ('Barbell', 'Barbell'),
+        ('Dumbbell', 'Dumbbell'),
+        ('Kettlebell', 'Kettlebell'),
+        ('Bands', 'Bands'),
+        ('Machine', 'Machine'),
+        ('Track', 'Track'),
+        ('Field', 'Field'),
+        ('Medicine Ball', 'Medicine Ball'),
+    ]
+
+    LATERALITY_CHOICES = [
+        ('Unilateral', 'Unilateral'),
+        ('Bilateral', 'Bilateral'),
+        ('N/A', 'N/A'),
+    ]
+
+    COMPLEXITY_CHOICES = [
+        ('Beginner', 'Beginner'),
+        ('Intermediate', 'Intermediate'),
+        ('Advanced', 'Advanced'),
+    ]
+
+    RISK_CHOICES = [
+        ('Low', 'Low'),
+        ('Moderate', 'Moderate'),
+        ('High', 'High'),
+    ]
+
+    exercise_id = models.CharField(max_length=50, primary_key=True)
+    exercise_name = models.CharField(max_length=100)
+    discipline_category = models.CharField(max_length=20, choices=DISCIPLINE_CHOICES)
+    movement_pattern = models.CharField(max_length=50, choices=MOVEMENT_PATTERN_CHOICES)
+    primary_muscle_group = models.CharField(max_length=50)
+    energy_system = models.CharField(max_length=20, choices=ENERGY_SYSTEM_CHOICES)
+    cns_load_score = models.FloatField(help_text="1.0 to 10.0 scale")
+    intensity_type = models.CharField(max_length=20, choices=INTENSITY_CHOICES)
+    recommended_min_sets = models.IntegerField(default=1)
+    recommended_max_sets = models.IntegerField(default=5)
+    recommended_min_reps = models.IntegerField(default=1)
+    recommended_max_reps = models.IntegerField(default=20)
+    rest_time_seconds_min = models.IntegerField(default=60)
+    rest_time_seconds_max = models.IntegerField(default=180)
+    equipment_required = models.CharField(max_length=50, choices=EQUIPMENT_CHOICES, default='None')
+    unilateral_or_bilateral = models.CharField(max_length=20, choices=LATERALITY_CHOICES, default='Bilateral')
+    complexity_level = models.CharField(max_length=20, choices=COMPLEXITY_CHOICES, default='Intermediate')
+    injury_risk_level = models.CharField(max_length=20, choices=RISK_CHOICES, default='Moderate')
+
+    @property
+    def intensity_multiplier(self):
+        mul_map = {
+            'Recovery': 0.8,
+            'Conditioning': 1.0,
+            'Hypertrophy': 1.2,
+            'Strength': 1.5,
+            'Power': 1.8,
+        }
+        return mul_map.get(self.intensity_type, 1.0)
+
+    def calculate_elu(self, sets, reps):
+        """ Calculate Estimated Load Units (ELU) using formula: (Sets * Reps) * CNS_Load * Intensity_Multiplier """
+        return (sets * reps) * self.cns_load_score * self.intensity_multiplier
+
+    def __str__(self):
+        return f"[{self.exercise_id}] {self.exercise_name} ({self.discipline_category})"
